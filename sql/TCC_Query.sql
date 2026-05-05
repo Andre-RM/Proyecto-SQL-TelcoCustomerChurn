@@ -290,3 +290,119 @@ INNER JOIN Churn C
    --SE VERIFICA LA INSERCIÓN DE DATOS
 SELECT COUNT(1) FROM clientes_detalle
 SELECT * FROM clientes_detalle
+
+--------------------------------------------------------
+
+----------------------PREGUNTAS-------------------------
+--1. ¿Cuántos clientes hay en total y cuantos aun permanecen?
+
+SELECT COUNT(1) AS NRO_CLIENTES,
+		(SELECT COUNT(1) 
+			FROM clientes_detalle CD
+			INNER JOIN Churn C ON CD.churn_id=C.churn_id
+			WHERE C.churn_value=0 --0 = PERMANECEN / 1 = ABANDONARON
+		) AS PERMANECEN
+FROM Clientes
+
+--2. ¿Cuántos clientes abandonaron y qué porcentaje representan del total?
+
+WITH CLIENTES_ABANDONO AS(
+	SELECT COUNT(CD.customer_id) AS ABANDONOS
+	FROM clientes_detalle CD
+	INNER JOIN Churn C ON CD.churn_id=C.churn_id
+	WHERE C.churn_value=1
+)
+SELECT 
+    COUNT(C.customer_id) AS NRO_CLIENTES,
+    (SELECT ABANDONOS FROM CLIENTES_ABANDONO) AS ABANDONOS,
+    CAST(((SELECT ABANDONOS FROM CLIENTES_ABANDONO) * 100.0 / COUNT(C.customer_id)) AS DECIMAL(10,2)) AS REPRESENTACION
+FROM Clientes AS C;
+
+--3. ¿Cuántos clientes hay por tipo de contrato?
+SELECT F.contract,
+	   COUNT(CD.customer_id) AS NRO_CLIENTES
+FROM clientes_detalle CD
+INNER JOIN Facturacion F ON CD.billing_id = F.billing_id
+GROUP BY F.contract
+
+--4. ¿Cuál es el promedio de monthly_charges(cargos mensuales) por tipo de contrato?
+SELECT contract, 
+		CAST(AVG(monthly_charges) AS DECIMAL(10,2)) AS PROMEDIO_CARGOS_MENSUALES
+FROM Facturacion
+GROUP BY contract
+
+--5. ¿Qué método de pago tiene más clientes?
+SELECT F.Payment_method,
+		COUNT(CD.customer_id) AS NRO_CLIENTES
+FROM clientes_detalle CD
+INNER JOIN Facturacion F ON CD.billing_id=F.billing_id
+GROUP BY F.Payment_method
+
+SELECT TOP 1 F.Payment_method,
+		COUNT(CD.customer_id) AS NRO_CLIENTES
+FROM clientes_detalle CD
+INNER JOIN Facturacion F ON CD.billing_id=F.billing_id
+GROUP BY F.Payment_method
+
+--6. ¿Cuál es la tasa de churn(abandono) por tipo de contrato?
+
+SELECT 
+    F.contract,
+    COUNT(1) AS total_clientes,
+    SUM(CASE 
+			WHEN C.churn_value = 1 THEN 1 ELSE 0 
+		END) AS clientes_abandonaron,
+    CAST(SUM(CASE 
+				WHEN C.churn_value = 1 THEN 1 ELSE 0 
+			END) * 100.0 
+         / COUNT(1) AS DECIMAL(5,2)) AS tasa_abandono
+
+FROM clientes_detalle CD
+INNER JOIN Churn C ON CD.churn_id = C.churn_id
+INNER JOIN Facturacion F ON CD.billing_id = F.billing_id
+GROUP BY F.contract;
+
+--7. ¿Qué tipo de servicio de internet tiene más churn(abandono)?
+
+SELECT S.internet_service,
+		COUNT(CD.customer_id) total_clientes,
+		SUM(CASE 
+			WHEN C.churn_value = 1 THEN 1 ELSE 0 
+		END) AS clientes_abandonaron
+		
+FROM clientes_detalle CD
+INNER JOIN Servicios S ON CD.service_id=S.service_id
+INNER JOIN Churn C ON CD.churn_id=C.churn_id
+GROUP BY S.internet_service
+
+
+--8. ¿Top 5 ciudades con mayor cantidad de clientes que abandonaron?
+SELECT TOP 5 U.country,
+		U.state,
+		U.city,
+		COUNT(CD.customer_id) nro_clientes
+FROM clientes_detalle CD 
+INNER JOIN Ubicaciones U ON CD.location_id=U.location_id
+INNER JOIN Churn C ON CD.churn_id=C.churn_id
+WHERE C.churn_value=1
+GROUP BY U.country,U.state,U.city
+ORDER BY nro_clientes DESC
+
+--9. ¿Clientes con mayor CLTV que NO han hecho churn(abandono)?
+SELECT TOP 5 CD.customer_id,
+		C.cltv
+FROM clientes_detalle CD
+INNER JOIN Churn C ON CD.churn_id=C.churn_id
+WHERE C.churn_value=0
+ORDER BY C.cltv DESC
+
+
+--10.¿Cuáles son las razones más recurrentes por la cual los clientes abandonan dichos servicios?
+SELECT C.churn_reason,
+		COUNT(CD.customer_id) nro_razones_recurrentes
+FROM clientes_detalle CD
+INNER JOIN Churn C ON CD.churn_id=C.churn_id
+INNER JOIN Facturacion F ON CD.billing_id = F.billing_id
+WHERE C.churn_value=1
+GROUP BY C.churn_reason
+ORDER BY nro_razones_recurrentes DESC
