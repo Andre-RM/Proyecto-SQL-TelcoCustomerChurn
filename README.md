@@ -12,7 +12,7 @@ _Este proyecto consiste en un análisis exploratorio y descriptivo de datos (EDA
 Los datos originales, junto con una explicacion de cada columna, se pueden encontrar [aqui](https://www.kaggle.com/datasets/abdallahwagih/telco-customer-churn).
 El conjunto de datos proviene de una tabla de 33 columnas con mas de 7000 registros.
 
-![TCC Analytics](picture\sobre-los-datos-1.PNG)
+![TCC Analytics](./picture/sobre-los-datos-1.PNG)
 
 ## Proceso ETL
 Para este proyecto se realizo un proceso ETL lo que incluyo:
@@ -32,4 +32,4 @@ Se crearon las siguiente tablas:
 - clientes_detalle
 
 Este enfoque permitio mejorar la integridad de los datos.
-![TCC Analytics](picture\modelado-datos-1.PNG)
+![TCC Analytics](./picture/modelado-datos-1.PNG)
