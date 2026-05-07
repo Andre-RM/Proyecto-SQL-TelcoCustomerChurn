@@ -53,7 +53,7 @@ WITH (
 SELECT TOP 10 * FROM Telco_Customer_Churn
 SELECT COUNT(1) FROM Telco_Customer_Churn
 
---BUSCAR VALORES VACIOS O NULOS
+--BUSCA VACIOS O VALORES NULOS EN MI TABLA TELCO_CUSTOMER 
 SELECT *
 FROM Telco_Customer_Churn
 WHERE Total_Charges='' OR Total_Charges IS NULL;
@@ -144,7 +144,7 @@ FROM Telco_Customer_Churn;
 --SE VERIFICA LA INSERCIÓN DE DATOS
 SELECT * FROM clientes;
 
---SE VERIFICA SI HAY VALORES DUPLICADOS
+--SE VERIFICA SI HAY VALORES DUPLICADOS EN MI TABLA CLIENTES
 SELECT customer_id, COUNT(*)
 FROM Clientes
 GROUP BY customer_id
@@ -182,7 +182,7 @@ SELECT DISTINCT
 	Streaming_Movies
 FROM Telco_Customer_Churn
 
---LIMPIEZA DE DATOS (ESPACIADOS IZQUIERDO Y DERECHO)
+--LIMPIEZA DE ESPACIOS EN BLANCO PARA LA TABLA SERVICIOS
 UPDATE Servicios
 SET 
     phone_service = LTRIM(RTRIM(phone_service)),
@@ -274,7 +274,6 @@ INNER JOIN Facturacion F
    AND TC.Paperless_Billing = F.Paperless_billing
    AND TC.Payment_Method = F.Payment_method
    AND TRY_CAST(TC.Monthly_Charges AS DECIMAL(10,2)) = F.monthly_charges
-   --AND TRY_CAST(TC.Total_Charges AS DECIMAL(10,2)) = F.total_charges
    AND ISNULL(TRY_CAST(TC.Total_Charges AS DECIMAL(10,2)), -1)
        = ISNULL(F.total_charges, -1)
 
@@ -318,9 +317,11 @@ SELECT
     CAST(((SELECT ABANDONOS FROM CLIENTES_ABANDONO) * 100.0 / COUNT(C.customer_id)) AS DECIMAL(10,2)) AS REPRESENTACION
 FROM Clientes AS C;
 
---3. ¿Cuántos clientes hay por tipo de contrato?
+--3. ¿Cuál es la distribución de clientes por tipo de contrato y qué porcentaje representan?
 SELECT F.contract,
-	   COUNT(CD.customer_id) AS NRO_CLIENTES
+	   COUNT(CD.customer_id) AS Nro_clientes,
+	   CAST(COUNT(CD.customer_id) *100.0/ (SELECT COUNT(CD.customer_id)
+			FROM clientes_detalle CD) AS DECIMAL (10,2)) Representacion
 FROM clientes_detalle CD
 INNER JOIN Facturacion F ON CD.billing_id = F.billing_id
 GROUP BY F.contract
@@ -331,18 +332,15 @@ SELECT contract,
 FROM Facturacion
 GROUP BY contract
 
---5. ¿Qué método de pago tiene más clientes?
-SELECT F.Payment_method,
-		COUNT(CD.customer_id) AS NRO_CLIENTES
-FROM clientes_detalle CD
-INNER JOIN Facturacion F ON CD.billing_id=F.billing_id
-GROUP BY F.Payment_method
-
+--5. ¿Qué método de pago tiene más clientes y qué porcentaje representa?
 SELECT TOP 1 F.Payment_method,
-		COUNT(CD.customer_id) AS NRO_CLIENTES
+		COUNT(CD.customer_id) AS Nro_clientes,
+		CAST(COUNT(CD.customer_id) *100.0/ (SELECT COUNT(CD.customer_id)
+					FROM clientes_detalle CD) AS DECIMAL (10,2)) Representacion
 FROM clientes_detalle CD
 INNER JOIN Facturacion F ON CD.billing_id=F.billing_id
 GROUP BY F.Payment_method
+ORDER BY Nro_clientes DESC
 
 --6. ¿Cuál es la tasa de churn(abandono) por tipo de contrato?
 
