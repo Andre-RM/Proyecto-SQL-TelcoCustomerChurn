@@ -112,7 +112,7 @@ SELECT COUNT(1) AS NRO_CLIENTES,
 		) AS PERMANECEN
 FROM Clientes
 ```
-![image](/picture/preg-1.png)
+![image](/picture/preg-1.PNG)
 
 Esta métrica sirve como punto de partida para comprender el nivel general de retención y dimensionar el impacto del churn dentro del negocio.
 
