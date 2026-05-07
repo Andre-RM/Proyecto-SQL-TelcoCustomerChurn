@@ -133,7 +133,7 @@ SELECT
     CAST(((SELECT ABANDONOS FROM CLIENTES_ABANDONO) * 100.0 / COUNT(C.customer_id)) AS DECIMAL(10,2)) AS REPRESENTACION
 FROM Clientes AS C;
 ```
-![image](/picture/preg-2.png)
+![image](/picture/preg-2.PNG)
 
 El análisis permitió identificar cuántos clientes abandonaron el servicio y qué proporción representan dentro de la cartera total de clientes. Ademas, un porcentaje elevado de abandono podría indicar problemas relacionados con satisfacción del cliente, costos, soporte técnico o condiciones contractuales.
 
@@ -152,7 +152,7 @@ FROM clientes_detalle CD
 INNER JOIN Facturacion F ON CD.billing_id = F.billing_id
 GROUP BY F.contract
 ```
-![image](/picture/preg-3.png)
+![image](/picture/preg-3.PNG)
 
 Se identificó que la mayor parte de clientes estan bajo el contrato de "Month-to-Month" siendo el 55.02 %.
 La empresa podría utilizar esta información para evaluar estrategias que incentiven a los clientes a migrar hacia contratos de mayor duración mediante descuentos, beneficios exclusivos o programas de fidelización.
@@ -167,7 +167,7 @@ SELECT contract,
 FROM Facturacion
 GROUP BY contract
 ```
-![image](./picture/preg-4.png)
+![image](/picture/preg-4.PNG)
 
 Según el análisis los clientes con contratos mensuales (Month-to-month) presentan el promedio de cargos mensuales más alto.
 
@@ -191,5 +191,6 @@ INNER JOIN Facturacion F ON CD.billing_id=F.billing_id
 GROUP BY F.Payment_method
 ORDER BY Nro_clientes DESC
 ```
+![image](/picture/preg-5.PNG)
 
 El método de pago más utilizado por los clientes es "Electronic check", representando aproximadamente un tercio de toda la cartera de clientes.
