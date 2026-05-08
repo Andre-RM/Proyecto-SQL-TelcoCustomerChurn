@@ -35,13 +35,13 @@ Este enfoque permitio mejorar la integridad de los datos.
 1. ¿Cuántos clientes hay en total y cuantos aún permanecen?
 2. ¿Cuántos clientes abandonaron y qué porcentaje representan del total?
 3. ¿Cuál es la distribución de clientes por tipo de contrato?
-4. ¿Cuál es el promedio de monthly_charges(cargos mensuales) por tipo de contrato?
-5. ¿Qué método de pago tiene más clientes y que porcentaje representa?
+4. ¿Cuál es el promedio de monthly_charges por tipo de contrato?
+5. ¿Qué método de pago tiene más clientes y qué porcentaje representa?
 6. ¿Cuál es la tasa de churn(abandono) por tipo de contrato?
-7. ¿Qué tipo de servicio de internet tiene más churn(abandono)?
-8. ¿Top 5 ciudades con mayor cantidad de clientes que abandonaron?
-9. ¿Clientes con mayor CLTV que NO han hecho churn(abandono)?
-10. ¿Cuáles son las razones más recurrentes por la cual los clientes abandonan dichos servicios?
+7. ¿Cuáles son las principales razones de abandono según el tipo de servicio de internet?
+8. ¿Cuáles son las ciudades con mayor tasa de churn considerando ciudades con más de 100 clientes?
+9. ¿Qué características presentan los 20 clientes activos de mayor CLTV con servicios de internet?
+10. ¿Cómo influye la antigüedad del cliente en la tasa de churn?
 
 ## Limpieza de datos
 Fue necesario realizar una etapa de limpieza y validación de la información cargada desde el archivo CSV.
@@ -157,7 +157,7 @@ GROUP BY F.contract
 Se identificó que la mayor parte de clientes estan bajo el contrato de "Month-to-Month" siendo el 55.02 %.
 La empresa podría utilizar esta información para evaluar estrategias que incentiven a los clientes a migrar hacia contratos de mayor duración mediante descuentos, beneficios exclusivos o programas de fidelización.
 
-### 4. ¿Cuál es el promedio de monthly charges(cargos mensuales) por tipo de contrato?
+### 4. ¿Cuál es el promedio de monthly charges por tipo de contrato?
 
 Se aplicó la función AVG() para calcular el promedio de monthly_charges según cada tipo de contrato. Posteriormente, se utilizó CAST() para mostrar el resultado con dos decimales y facilitar la lectura de los datos.
 
@@ -171,9 +171,7 @@ GROUP BY contract
 
 Según el análisis los clientes con contratos mensuales (Month-to-month) presentan el promedio de cargos mensuales más alto.
 
-Esto podría indicar que los clientes con contratos de corta duración adquieren servicios más costosos o planes con mayor flexibilidad. Sin embargo, este tipo de contrato también suele estar asociado a mayores tasas de churn, lo que representa un posible riesgo para la empresa.
-
-La empresa podría evaluar estrategias para incentivar a los clientes con contratos mensuales a migrar hacia contratos de mayor duración mediante descuentos, beneficios exclusivos o mejoras en el servicio.
+Esto podría indicar que los clientes con contratos de corta duración adquieren servicios más costosos o planes con mayor flexibilidad. La empresa podría evaluar estrategias para incentivar a los clientes con contratos mensuales a migrar hacia contratos de mayor duración mediante descuentos, beneficios exclusivos o mejoras en el servicio.
 
 Esto permitiría mantener ingresos recurrentes mientras se reduce el riesgo de abandono asociado a contratos de corto plazo
 
@@ -194,3 +192,178 @@ ORDER BY Nro_clientes DESC
 ![image](/picture/preg-5.PNG)
 
 El método de pago más utilizado por los clientes es "Electronic check", representando aproximadamente un tercio de toda la cartera de clientes.
+
+### 6. ¿Cuál es la tasa de churn(abandono) por tipo de contrato?
+Para calcular la tasa de churn por contrato se relacionaron las tablas clientes_detalle, churn y facturacion mediante INNER JOIN.
+
+Se utilizó SUM (CASE WHEN) para contar únicamente a los clientes que abandonaron el servicio y posteriormente se calculó el porcentaje de abandono respecto al total de clientes de cada tipo de contrato.
+```sql
+SELECT 
+    F.contract,
+    COUNT(1) AS total_clientes,
+    SUM(CASE 
+			WHEN C.churn_value = 1 THEN 1 ELSE 0 
+		END) AS clientes_abandonaron,
+    CAST(SUM(CASE 
+				WHEN C.churn_value = 1 THEN 1 ELSE 0 
+			END) * 100.0 
+         / COUNT(1) AS DECIMAL(5,2)) AS tasa_abandono
+
+FROM clientes_detalle CD
+INNER JOIN Churn C ON CD.churn_id = C.churn_id
+INNER JOIN Facturacion F ON CD.billing_id = F.billing_id
+GROUP BY F.contract;
+
+```
+![image](/picture/preg-6.PNG)
+
+Los clientes con contratos mensuales **(Month-to-month)** presentan la tasa de churn más alta, superando el 40% de abandono. En contraste, los contratos de uno y dos años muestran niveles de retención considerablemente mejores.
+
+Sería recomendable enfocar campañas de retención específicamente en clientes con contratos mensuales, ya que representan el segmento con mayor riesgo de abandono.
+
+### 7.¿Cuáles son las principales razones de abandono según el tipo de servicio de internet?
+Se utilizó COUNT() para contabilizar la cantidad de clientes que abandonaron el servicio según el tipo de internet y la razón de churn. Además, se aplicó una función de ventana (OVER(PARTITION BY)) para calcular el total de abandonos dentro de cada categoría de servicio de internet.
+
+```sql
+SELECT 
+    S.internet_service,
+    C.churn_reason,
+    COUNT(CD.customer_id) AS nro_abandonos_razon,
+    SUM(COUNT(CD.customer_id)) OVER(PARTITION BY S.internet_service) AS total_abandonos
+FROM clientes_detalle CD
+INNER JOIN Servicios S ON CD.service_id = S.service_id
+INNER JOIN Churn C ON CD.churn_id = C.churn_id
+WHERE C.churn_value = 1
+GROUP BY S.internet_service, C.churn_reason
+ORDER BY total_abandonos DESC, nro_abandonos_razon DESC;
+```
+![image](/picture/preg-7.PNG)
+![image](/picture/preg-7.1.PNG)
+
+El análisis muestra que las razones de abandono varían según el tipo de servicio contratado.
+
+En clientes con servicio Fiber optic, la razón más frecuente está relacionada con la atención del personal de soporte (Attitude of support person). Esto podría indicar problemas en la experiencia de atención al cliente, tiempos de respuesta o resolución de incidencias técnicas.
+
+Por otro lado, los clientes con servicio DSL abandonan principalmente debido a que competidores ofrecen mayores velocidades de descarga, lo que sugiere una posible desventaja tecnológica o comercial frente a otras empresas del mercado.
+
+Incluso en clientes sin servicio de internet y solo teniendo servicio móvil, vuelve a aparecer la atención del soporte como una causa relevante de abandono, lo que evidencia que la experiencia del cliente podría estar influyendo significativamente en la retención.
+
+Se debería reforzar la calidad del soporte al cliente, especialmente en usuarios con servicio Fiber optic, ya que la atención parece ser uno de los factores más asociados al abandono.
+
+### 8.¿Cuáles son las ciudades con mayor tasa de churn considerando ciudades con más de 100 clientes?
+Se relacionaron las tablas clientes_detalle, ubicaciones y churn mediante INNER JOIN.
+
+Se calculó la cantidad total de clientes por ciudad y posteriormente la cantidad de clientes que abandonaron el servicio. Finalmente, se obtuvo la tasa de churn utilizando un cálculo porcentual.
+
+```sql
+SELECT U.country,
+		U.state,
+		U.city,
+		(
+		SELECT COUNT(CD2.customer_id)
+		FROM clientes_detalle CD2
+		INNER JOIN Ubicaciones U2 ON CD2.location_id=U2.location_id
+		WHERE U2.city=U.city
+		) total_clientes,
+		COUNT(CD.customer_id) clientes_abandonaron,
+		CAST(COUNT(CD.customer_id) *100.0/ (SELECT COUNT(CD2.customer_id)
+				FROM clientes_detalle CD2
+				INNER JOIN Ubicaciones U2 ON CD2.location_id=U2.location_id
+				WHERE U2.city=U.city) 
+		AS DECIMAL (10,2)) tasa_abandono
+
+FROM clientes_detalle CD 
+INNER JOIN Ubicaciones U ON CD.location_id=U.location_id
+INNER JOIN Churn C ON CD.churn_id=C.churn_id
+WHERE C.churn_value=1 AND 
+	(
+	SELECT COUNT(CD2.customer_id)
+	FROM clientes_detalle CD2
+	INNER JOIN Ubicaciones U2 ON CD2.location_id=U2.location_id
+	WHERE U2.city=U.city
+	) > 100
+GROUP BY U.country,U.state,U.city
+ORDER BY tasa_abandono DESC
+```
+![image](/picture/preg-8.PNG)
+
+El análisis muestra que San Diego presenta la tasa de churn más alta entre las ciudades evaluadas, superando incluso a ciudades con mayor cantidad de clientes como Los Angeles.
+
+Esto podría indicar diferencias regionales relacionadas con la calidad del servicio, competencia local, costos o satisfacción del cliente.
+
+### 9.¿Qué características presentan los 20 clientes activos de mayor CLTV con servicios de internet?
+Para este análisis se relacionaron las tablas clientes_detalle, churn, servicios y facturacion mediante INNER JOIN.
+
+Se filtraron únicamente los clientes que permanecen activos (churn_value = 0) y que cuentan con algún servicio de internet.
+
+```sql
+SELECT TOP 20 CD.customer_id,
+	C.cltv,
+	S.internet_service,
+	S.phone_service,
+	S.online_security,
+	S.online_backup,
+	S.device_protection,
+	S.tech_support,
+	S.streaming_tv,
+	S.streaming_movies,
+	F.contract,
+	F.Payment_method,
+	F.monthly_charges,
+	F.total_charges
+FROM clientes_detalle CD
+INNER JOIN Churn C ON CD.churn_id=C.churn_id
+INNER JOIN Servicios S ON CD.service_id=S.service_id
+INNER JOIN Facturacion F ON CD.billing_id=F.billing_id
+WHERE C.churn_value=0 AND S.internet_service !='No'
+ORDER BY C.cltv DESC
+```
+![image](/picture/preg-9.PNG)
+
+Varios de estos clientes cuentan con servicios adicionales como seguridad online, soporte técnico, respaldo en línea y plataformas de streaming, lo que podría indicar un mayor nivel de compromiso con la empresa y un mayor consumo de servicios, además de características en común, especialmente contratos de largo plazo y métodos de pago automáticos.
+
+La empresa podría utilizar este perfil de clientes para diseñar estrategias de fidelización enfocadas en usuarios de alto valor,ofrecer beneficios exclusivos a clientes con contratos largos y desarrollar programas de retención premium para clientes con alto CLTV. Esto permitiría proteger a los clientes más rentables y reducir el impacto financiero asociado al churn.
+
+### 10.¿Cómo influye la antigüedad del cliente en la tasa de churn?
+Para este análisis se utilizaron las tablas clientes_detalle y churn, relacionadas mediante INNER JOIN.
+
+Los clientes fueron agrupados en rangos de antigüedad utilizando CASE, tomando como referencia la columna tenure_months. Posteriormente, se calculó:
+-	El total de clientes por rango
+-	La cantidad de clientes que abandonaron el servicio
+-	La tasa de churn correspondiente
+
+```sql
+SELECT CASE 
+			WHEN CD.tenure_months BETWEEN 0 AND 12 THEN '0-12 meses'
+			WHEN CD.tenure_months BETWEEN 13 AND 24 THEN '13-24 meses'
+			WHEN CD.tenure_months BETWEEN 25 AND 48 THEN '25-48 meses'
+			ELSE '49+ meses'
+		END rango_meses,
+		COUNT(CD.customer_id) total_clientes,
+		SUM(CASE WHEN C.churn_value = 1 THEN 1 ELSE 0 END) clientes_abandonan,
+		(CAST(SUM(CASE WHEN C.churn_value = 1 THEN 1 ELSE 0 END) *100.0
+			/		
+		COUNT(CD.customer_id) AS DECIMAL(10,2))) tasa_abandono
+FROM clientes_detalle CD
+INNER JOIN Churn C ON CD.churn_id=C.churn_id
+GROUP BY CASE 
+			WHEN CD.tenure_months BETWEEN 0 AND 12 THEN '0-12 meses'
+			WHEN CD.tenure_months BETWEEN 13 AND 24 THEN '13-24 meses'
+			WHEN CD.tenure_months BETWEEN 25 AND 48 THEN '25-48 meses'
+			ELSE '49+ meses'
+		END
+```
+![image](/picture/preg-10.PNG)
+
+En base a estos resultados los primeros meses representan el período más crítico para la retención de clientes, mientras que la permanencia prolongada suele generar mayor fidelización y estabilidad.
+
+Se debería enfocar estrategias de retención especialmente en clientes nuevos, ya que representan el grupo con mayor riesgo de abandono.
+
+### Conclusiones
+- El análisis evidenció que los clientes con contratos mensuales (Month-to-month) presentan la mayor tasa de abandono, mientras que los contratos de uno y dos años muestran niveles de retención considerablemente más altos.
+
+- Se identificó que el servicio Fiber optic concentra el mayor porcentaje de churn, principalmente asociado a problemas relacionados con la atención al cliente y soporte técnico.
+
+- La antigüedad del cliente demostró ser un factor importante en la retención, ya que los clientes con menos tiempo en la empresa presentan un mayor riesgo de abandono en comparación con aquellos con varios años de permanencia.
+
+- Con base en los resultados obtenidos, la empresa debería reforzar sus estrategias de retención durante los primeros meses del cliente, mejorar la calidad del soporte técnico y promover beneficios asociados a contratos de largo plazo y pagos automáticos.

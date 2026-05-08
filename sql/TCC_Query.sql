@@ -360,47 +360,91 @@ INNER JOIN Churn C ON CD.churn_id = C.churn_id
 INNER JOIN Facturacion F ON CD.billing_id = F.billing_id
 GROUP BY F.contract;
 
---7. ¿Qué tipo de servicio de internet tiene más churn(abandono)?
+--7. ¿Cuáles son las principales razones de abandono según el tipo de servicio de internet?
 
-SELECT S.internet_service,
-		COUNT(CD.customer_id) total_clientes,
-		SUM(CASE 
-			WHEN C.churn_value = 1 THEN 1 ELSE 0 
-		END) AS clientes_abandonaron
-		
+SELECT 
+    S.internet_service,
+    C.churn_reason,
+    COUNT(CD.customer_id) AS nro_abandonos_razon,
+    SUM(COUNT(CD.customer_id)) OVER(PARTITION BY S.internet_service) AS total_abandonos
 FROM clientes_detalle CD
-INNER JOIN Servicios S ON CD.service_id=S.service_id
-INNER JOIN Churn C ON CD.churn_id=C.churn_id
-GROUP BY S.internet_service
+INNER JOIN Servicios S ON CD.service_id = S.service_id
+INNER JOIN Churn C ON CD.churn_id = C.churn_id
+WHERE C.churn_value = 1
+GROUP BY S.internet_service, C.churn_reason
+ORDER BY total_abandonos DESC, nro_abandonos_razon DESC;
 
 
---8. ¿Top 5 ciudades con mayor cantidad de clientes que abandonaron?
-SELECT TOP 5 U.country,
+--8. ¿Cuáles son las ciudades con mayor tasa de churn considerando ciudades con más de 100 clientes?
+SELECT U.country,
 		U.state,
 		U.city,
-		COUNT(CD.customer_id) nro_clientes
+		(
+		SELECT COUNT(CD2.customer_id)
+		FROM clientes_detalle CD2
+		INNER JOIN Ubicaciones U2 ON CD2.location_id=U2.location_id
+		WHERE U2.city=U.city
+		) total_clientes,
+		COUNT(CD.customer_id) clientes_abandonaron,
+		CAST(COUNT(CD.customer_id) *100.0/ (SELECT COUNT(CD2.customer_id)
+				FROM clientes_detalle CD2
+				INNER JOIN Ubicaciones U2 ON CD2.location_id=U2.location_id
+				WHERE U2.city=U.city) 
+		AS DECIMAL (10,2)) tasa_abandono
+
 FROM clientes_detalle CD 
 INNER JOIN Ubicaciones U ON CD.location_id=U.location_id
 INNER JOIN Churn C ON CD.churn_id=C.churn_id
-WHERE C.churn_value=1
+WHERE C.churn_value=1 AND 
+	(
+	SELECT COUNT(CD2.customer_id)
+	FROM clientes_detalle CD2
+	INNER JOIN Ubicaciones U2 ON CD2.location_id=U2.location_id
+	WHERE U2.city=U.city
+	) > 100
 GROUP BY U.country,U.state,U.city
-ORDER BY nro_clientes DESC
+ORDER BY tasa_abandono DESC
 
---9. ¿Clientes con mayor CLTV que NO han hecho churn(abandono)?
-SELECT TOP 5 CD.customer_id,
-		C.cltv
+--9. ¿Qué características presentan los 20 clientes activos de mayor CLTV con servicios de internet?
+SELECT TOP 20 CD.customer_id,
+	C.cltv,
+	S.internet_service,
+	S.phone_service,
+	S.online_security,
+	S.online_backup,
+	S.device_protection,
+	S.tech_support,
+	S.streaming_tv,
+	S.streaming_movies,
+	F.contract,
+	F.Payment_method,
+	F.monthly_charges,
+	F.total_charges
 FROM clientes_detalle CD
 INNER JOIN Churn C ON CD.churn_id=C.churn_id
-WHERE C.churn_value=0
+INNER JOIN Servicios S ON CD.service_id=S.service_id
+INNER JOIN Facturacion F ON CD.billing_id=F.billing_id
+WHERE C.churn_value=0 AND S.internet_service !='No'
 ORDER BY C.cltv DESC
 
 
---10.¿Cuáles son las razones más recurrentes por la cual los clientes abandonan dichos servicios?
-SELECT C.churn_reason,
-		COUNT(CD.customer_id) nro_razones_recurrentes
+--10.¿Cómo influye la antigüedad del cliente en la tasa de churn?
+SELECT CASE 
+			WHEN CD.tenure_months BETWEEN 0 AND 12 THEN '0-12 meses'
+			WHEN CD.tenure_months BETWEEN 13 AND 24 THEN '13-24 meses'
+			WHEN CD.tenure_months BETWEEN 25 AND 48 THEN '25-48 meses'
+			ELSE '49+ meses'
+		END rango_meses,
+		COUNT(CD.customer_id) total_clientes,
+		SUM(CASE WHEN C.churn_value = 1 THEN 1 ELSE 0 END) clientes_abandonan,
+		(CAST(SUM(CASE WHEN C.churn_value = 1 THEN 1 ELSE 0 END) *100.0
+			/		
+		COUNT(CD.customer_id) AS DECIMAL(10,2))) tasa_abandono
 FROM clientes_detalle CD
 INNER JOIN Churn C ON CD.churn_id=C.churn_id
-INNER JOIN Facturacion F ON CD.billing_id = F.billing_id
-WHERE C.churn_value=1
-GROUP BY C.churn_reason
-ORDER BY nro_razones_recurrentes DESC
+GROUP BY CASE 
+			WHEN CD.tenure_months BETWEEN 0 AND 12 THEN '0-12 meses'
+			WHEN CD.tenure_months BETWEEN 13 AND 24 THEN '13-24 meses'
+			WHEN CD.tenure_months BETWEEN 25 AND 48 THEN '25-48 meses'
+			ELSE '49+ meses'
+		END
