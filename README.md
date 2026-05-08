@@ -18,8 +18,7 @@ El conjunto de datos proviene de una tabla de 33 columnas con mas de 7000 regist
 ![TCC Analytics](./picture/sobre-los-datos-1.PNG)
 
 ## Modelado de datos
-A partir de una tabla inicial, se diseño un modelo relacional para organizar la informacion.
-Se crearon las siguientes tablas:
+A partir de una tabla inicial **Telco_Customer_Churn**, se diseñó un modelo relacional para organizar la información inspirado en un esquema estrella (Star Schema), por lo que se crearon las siguientes tablas:
 - Clientes
 - Ubicaciones
 - Servicios
@@ -27,7 +26,7 @@ Se crearon las siguientes tablas:
 - Churn
 - clientes_detalle
 
-Este enfoque permitio mejorar la integridad de los datos.
+Donde la tabla **clientes_detalle** actúa como tabla central de relaciones y las demás tablas almacenan información descriptiva. Por lo que este enfoque permitió mejorar la integridad de los datos.
 
 ![TCC Analytics](./picture/modelado-datos-1.PNG)
 
