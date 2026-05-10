@@ -6,8 +6,8 @@ El objetivo de este proyecto es utilizar **SQL Server** para analizar la informa
 ## Estructura del Proyecto
 - [Sobre los datos](#sobre-los-datos)
 - [Modelado de datos](#modelado-datos)
-- [Limpieza de datos](#tareas)
-- [Tareas](#limpieza-de-datos)
+- [Tareas](#tareas)
+- [Limpieza de datos](#limpieza-de-datos)
 - [Análisis Exploratorio de Datos e Insights](#análisis-exploratorio-de-datos-e-insights)
 - [Conclusiones](#conclusiones)
 
@@ -241,9 +241,9 @@ ORDER BY total_abandonos DESC, nro_abandonos_razon DESC;
 
 El análisis muestra que las razones de abandono varían según el tipo de servicio contratado.
 
-En clientes con servicio Fiber optic, la razón más frecuente está relacionada con la atención del personal de soporte (Attitude of support person). Esto podría indicar problemas en la experiencia de atención al cliente, tiempos de respuesta o resolución de incidencias técnicas.
+En clientes con servicio Fiber optic, la razón más frecuente está relacionada con la atención del personal de soporte (Attitude of support person). Esto podría indicar problemas en la experiencia de atención al cliente.
 
-Por otro lado, los clientes con servicio DSL abandonan principalmente debido a que competidores ofrecen mayores velocidades de descarga, lo que sugiere una posible desventaja tecnológica o comercial frente a otras empresas del mercado.
+Por otro lado, los clientes con servicio DSL abandonan principalmente debido a que competidores ofrecen mayores velocidades de descarga, lo que sugiere una posible desventaja frente a otras empresas del mercado.
 
 Incluso en clientes sin servicio de internet y solo teniendo servicio móvil, vuelve a aparecer la atención del soporte como una causa relevante de abandono, lo que evidencia que la experiencia del cliente podría estar influyendo significativamente en la retención.
 
@@ -321,7 +321,7 @@ ORDER BY C.cltv DESC
 
 Varios de estos clientes cuentan con servicios adicionales como seguridad online, soporte técnico, respaldo en línea y plataformas de streaming, lo que podría indicar un mayor nivel de compromiso con la empresa y un mayor consumo de servicios, además de características en común, especialmente contratos de largo plazo y métodos de pago automáticos.
 
-La empresa podría utilizar este perfil de clientes para diseñar estrategias de fidelización enfocadas en usuarios de alto valor,ofrecer beneficios exclusivos a clientes con contratos largos y desarrollar programas de retención premium para clientes con alto CLTV. Esto permitiría proteger a los clientes más rentables y reducir el impacto financiero asociado al churn.
+La empresa podría utilizar este perfil de clientes para diseñar estrategias de fidelización enfocadas en usuarios de alto valor,ofrecer beneficios exclusivos a clientes con contratos largos. Esto permitiría proteger a los clientes más rentables y reducir el impacto financiero asociado al churn.
 
 ### 10.¿Cómo influye la antigüedad del cliente en la tasa de churn?
 Para este análisis se utilizaron las tablas clientes_detalle y churn, relacionadas mediante INNER JOIN.
